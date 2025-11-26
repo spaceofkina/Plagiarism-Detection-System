@@ -170,11 +170,7 @@ function App() {
     <div className="App">
       <header className="app-header">
         <h1>Plagiarism Detection System</h1>
-        <p>Research Edition - Using Sentence-BERT Semantic Similarity</p>
-        <div style={{fontSize: '0.8rem', opacity: '0.7', marginTop: '0.5rem'}}>
-          <div>🔬 Based on Sorsogon State University Research</div>
-          <div>📊 200%+ improvement over traditional methods</div>
-        </div>
+        <p>A Comparative Analysis of Text Similarity Methods for Duplicate Document Detection</p>
       </header>
 
       <nav className="tab-navigation">
