@@ -1,0 +1,9 @@
+[build]
+builder = "DOCKERFILE"
+dockerfile = "backend/Dockerfile"
+
+[deploy]
+startCommand = "python sbert_backend.py"
+
+[service]
+httpPort = 8000
