@@ -1,7 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer, util
 import numpy as np
 import uuid
 from typing import List, Dict, Any
@@ -11,28 +10,33 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Plagiarism Detection System - Sentence-BERT", version="1.0.0")
+app = FastAPI(title="Plagiarism Detection System", version="1.0.0")
 
-# CORS for both local development and production
+# CORS for production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://your-app-name.vercel.app"  # Will update after deployment
-    ],
+    allow_origins=["*"],  # Allow all in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-print("🚀 Loading Sentence-BERT model...")
-try:
-    model = SentenceTransformer('all-mpnet-base-v2')
-    print("✅ Sentence-BERT model loaded successfully!")
-except Exception as e:
-    print(f"❌ Error loading model: {e}")
-    exit(1)
+# Use smaller model for production
+model = None
+
+def load_model():
+    global model
+    if model is None:
+        print("🚀 Loading Sentence-BERT model (production version)...")
+        try:
+            from sentence_transformers import SentenceTransformer, util
+            # Use smaller, faster model for production
+            model = SentenceTransformer('all-MiniLM-L6-v2')
+            print("✅ Production model loaded successfully!")
+        except Exception as e:
+            print(f"❌ Error loading model: {e}")
+            raise
+    return model
 
 class SimilarityRequest(BaseModel):
     text1: str
@@ -53,7 +57,7 @@ documents_db = {}
 
 @app.get("/")
 async def root():
-    return {"message": "Plagiarism Detection System with Sentence-BERT", "version": "1.0.0"}
+    return {"message": "Plagiarism Detection System API", "version": "1.0.0"}
 
 @app.get("/health")
 async def health_check():
@@ -62,7 +66,10 @@ async def health_check():
 @app.post("/api/similarity/compare", response_model=PlagiarismResponse)
 async def compare_texts(request: SimilarityRequest):
     try:
-        embeddings = model.encode([request.text1, request.text2], convert_to_tensor=True)
+        model_instance = load_model()
+        from sentence_transformers import util
+        
+        embeddings = model_instance.encode([request.text1, request.text2])
         cosine_scores = util.cos_sim(embeddings[0], embeddings[1])
         similarity_score = float(cosine_scores[0][0])
         
@@ -105,7 +112,10 @@ async def check_document_plagiarism(document_id: str):
         raise HTTPException(status_code=404, detail="Document not found")
     
     target_doc = documents_db[document_id]
-    target_embedding = model.encode([target_doc["text"]], convert_to_tensor=True)[0]
+    model_instance = load_model()
+    from sentence_transformers import util
+    
+    target_embedding = model_instance.encode([target_doc["text"]])[0]
     
     results = []
     
@@ -113,7 +123,7 @@ async def check_document_plagiarism(document_id: str):
         if doc_id == document_id:
             continue
         
-        doc_embedding = model.encode([document["text"]], convert_to_tensor=True)[0]
+        doc_embedding = model_instance.encode([document["text"]])[0]
         similarity_score = float(util.cos_sim(target_embedding, doc_embedding)[0][0])
         
         results.append({
@@ -158,5 +168,6 @@ async def delete_document(document_id: str):
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8000))
-    print(f"🎯 Starting Sentence-BERT Server on port {port}")
+    print(f"🎯 Starting Production Server on port {port}")
+    print(f"🔬 Using: all-MiniLM-L6-v2 (optimized for production)")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
