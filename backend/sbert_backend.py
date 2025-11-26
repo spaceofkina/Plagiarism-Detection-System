@@ -38,14 +38,14 @@ app.add_middleware(
 
 # Load SBERT model with error handling and progress logging
 print("🚀 Starting Plagiarism Detection System...")
-print("📦 Loading Sentence-BERT model...")
+print("📦 Loading optimized Sentence-BERT model for production...")
 
 try:
-    # Use the same model from your research paper
-    model = SentenceTransformer('all-mpnet-base-v2')
-    print("✅ Sentence-BERT model loaded successfully!")
-    print(f"🔧 Model device: cpu")  # Render uses CPU
+    # Use smaller model that fits in 512MB RAM
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    print("✅ Sentence-BERT model loaded successfully! (all-MiniLM-L6-v2)")
     print("📊 Ready for semantic similarity detection")
+    print("💾 Model size: ~80MB (optimized for production)")
 except Exception as e:
     print(f"❌ Error loading model: {e}")
     logger.error(f"Model loading failed: {e}")
@@ -78,7 +78,7 @@ async def root():
         "message": "Plagiarism Detection System with Sentence-BERT",
         "version": "1.0.0",
         "status": "operational",
-        "model": "all-mpnet-base-v2"
+        "model": "all-MiniLM-L6-v2 (optimized for production)"
     }
 
 @app.get("/health")
@@ -88,6 +88,7 @@ async def health_check():
         "status": "healthy",
         "service": "plagiarism-detector",
         "model_loaded": True,
+        "model": "all-MiniLM-L6-v2",
         "timestamp": np.datetime64('now').astype(str)
     }
 
@@ -102,8 +103,9 @@ async def api_info():
             "check_plagiarism": "POST /api/documents/{id}/check",
             "delete_document": "DELETE /api/documents/{id}"
         },
-        "model": "all-mpnet-base-v2",
-        "similarity_threshold": 0.8
+        "model": "all-MiniLM-L6-v2",
+        "similarity_threshold": 0.8,
+        "optimized_for": "production deployment"
     }
 
 @app.post("/api/similarity/compare", response_model=PlagiarismResponse)
@@ -280,14 +282,15 @@ if __name__ == "__main__":
     print(f"🌐 Server: http://0.0.0.0:{port}")
     print(f"📚 API Documentation: http://0.0.0.0:{port}/docs")
     print(f"❤️  Health Check: http://0.0.0.0:{port}/health")
-    print(f"🔬 Model: all-mpnet-base-v2")
+    print(f"🔬 Model: all-MiniLM-L6-v2 (Production Optimized)")
+    print(f"💾 Memory: ~80MB (Fits in free tier)")
     print(f"⚡ Environment: Production")
     print("=" * 50)
     
     # Start the server
     uvicorn.run(
         app,
-        host="0.0.0.0",  # Important: must be 0.0.0.0 for Render
+        host="0.0.0.0",  # Important: must be 0.0.0.0 for deployment
         port=port,
         log_level="info",
         access_log=True
