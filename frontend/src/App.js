@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
+// Use your Render backend URL
 const API_BASE_URL = 'https://plagiarism-detection-system-3.onrender.com';
 
 function App() {
@@ -22,6 +23,8 @@ function App() {
 
     setLoading(true);
     try {
+      console.log('Sending request to:', `${API_BASE_URL}/api/similarity/compare`);
+      
       const response = await fetch(`${API_BASE_URL}/api/similarity/compare`, {
         method: 'POST',
         headers: {
@@ -30,26 +33,30 @@ function App() {
         body: JSON.stringify({ text1, text2 })
       });
       
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const result = await response.json();
+      console.log('Response data:', result);
       setSimilarityResult(result);
+      
     } catch (error) {
-      console.error('Error comparing texts:', error);
-      alert('Error comparing texts. Make sure the backend is running.');
+      console.error('Error details:', error);
+      alert(`Error comparing texts: ${error.message}. Make sure the backend is running on ${API_BASE_URL}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Upload document
+  // Upload document - FIXED VERSION USING FormData
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Only text files for lightweight version
+    // Only text files for this version
     if (!file.type.includes('text') && !file.name.endsWith('.txt')) {
       alert('Please upload a text file (.txt)');
       return;
@@ -57,29 +64,36 @@ function App() {
 
     setLoading(true);
     try {
-      const text = await file.text();
+      console.log('Uploading file:', file.name);
+      
+      // Use FormData instead of JSON - this fixes the 422 error
+      const formData = new FormData();
+      formData.append('file', file);
+      
       const response = await fetch(`${API_BASE_URL}/api/documents/upload`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          filename: file.name,
-          text: text 
-        })
+        body: formData
+        // Remove Content-Type header - browser sets it automatically for FormData
       });
       
+      console.log('Upload response status:', response.status);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const result = await response.json();
+      console.log('Upload success:', result);
+      
       setUploadMessage(`Document "${result.filename}" uploaded successfully!`);
       loadDocuments();
-      event.target.value = '';
+      event.target.value = ''; // Reset file input
+      
     } catch (error) {
-      console.error('Error uploading file:', error);
-      setUploadMessage('Error uploading document. Make sure the backend is running.');
+      console.error('Upload error details:', error);
+      setUploadMessage(`Error uploading document: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -155,9 +169,13 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-  <h1>Plagiarism Detection System</h1>
-  <p>Research Edition - Using Sentence-BERT Semantic Similarity</p>
-</header>
+        <h1>Plagiarism Detection System</h1>
+        <p>Research Edition - Using Sentence-BERT Semantic Similarity</p>
+        <div style={{fontSize: '0.8rem', opacity: '0.7', marginTop: '0.5rem'}}>
+          <div>🔬 Based on Sorsogon State University Research</div>
+          <div>📊 200%+ improvement over traditional methods</div>
+        </div>
+      </header>
 
       <nav className="tab-navigation">
         <button 
@@ -230,7 +248,7 @@ function App() {
             <h2>Document Management</h2>
             
             {uploadMessage && (
-              <div className="message-banner">
+              <div className={`message-banner ${uploadMessage.includes('Error') ? 'error' : 'success'}`}>
                 {uploadMessage}
               </div>
             )}
@@ -310,8 +328,8 @@ function App() {
       </main>
 
       <footer className="app-footer">
-  <p>Powered by Sentence-BERT | Research-Backed Semantic Similarity Detection</p>
-</footer>
+        <p>Powered by Sentence-BERT | Research- Text Similarity Methods</p>
+      </footer>
     </div>
   );
 }
