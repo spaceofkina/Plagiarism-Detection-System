@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 // Use your Render backend URL
-const API_BASE_URL = 'https://plagiarism-detection-system-3.onrender.com';
+const API_BASE_URL = 'https://plagiarism-detection-system-4.onrender.com';
 
 function App() {
   const [activeTab, setActiveTab] = useState('compare');
@@ -290,9 +290,8 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <h1>Enhanced Plagiarism Detection System</h1>
-        <p>A Comparative Analysis of Text Similarity Methods for Duplicate Document Detection</p>
-        <p className="subtitle">Now with Text Summarization & Research FAQs</p>
+        <h1>VeriText</h1>
+        <h2>Academic Text Similarity & Summarization System</h2>
       </header>
 
       <nav className="tab-navigation">
